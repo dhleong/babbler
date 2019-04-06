@@ -56,13 +56,20 @@ class TimelineFormatter {
         }, null, "  "));
     }
 
+    // for chromecast-device-emulator:
+    // _format(event) {
+    //     const formatted = Object.assign({}, event);
+    //     formatted.ipcMessage.data.requestId = this.nextRequestId++;
+    //     formatted.ipcMessage.data = JSON.stringify(formatted.ipcMessage.data);
+    //     formatted.ipcMessage = JSON.stringify(formatted.ipcMessage);
+    //     return formatted;
+    // }
+
     _format(event) {
         const formatted = Object.assign({}, event);
-        formatted.ipcMessage.data.requestId = this.nextRequestId++;
-        formatted.ipcMessage.data = JSON.stringify(formatted.ipcMessage.data);
-        formatted.ipcMessage = JSON.stringify(formatted.ipcMessage);
-        return formatted;
+        return formatted.ipcMessage;
     }
+
 }
 
 new TimelineFormatter().writeFormatted(timeline, "scenario.json");

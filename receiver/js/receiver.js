@@ -68,7 +68,7 @@ playbackConfig.licenseHandler = async data => {
     }
 
     const buffer = await performIpcLicenseRequest(
-        obj.base64,
+        obj.data,
         obj.url,
     );
     return { buffer };
