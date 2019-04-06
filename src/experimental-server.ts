@@ -10,7 +10,6 @@ const debug = _debug("babbler:exp");
 
 import { AmazonLicenseService } from "./amazon";
 import { Engine, IClient } from "./engine";
-import { serve } from "./serve";
 
 class SocketClient implements IClient {
     private nextRequestId = 1;
@@ -20,8 +19,15 @@ class SocketClient implements IClient {
     public send(message: any) {
         const clone = Object.assign({}, message);
         if (clone.data) {
-            clone.data.requestId = this.nextRequestId++;
+            if (clone.data.requestId === undefined) {
+                clone.data.requestId = this.nextRequestId++;
+            }
             clone.data = JSON.stringify(clone.data);
+        }
+
+        // hacks?
+        if (!clone.senderId) {
+            clone.senderId = "7f8b100d-a1fe-e60b-5a35-6feaa22976df.2:152792770056491611";
         }
         debug(">>", clone);
 
@@ -74,20 +80,4 @@ receiverServer.register(fastifyStatic, {
 receiverServer.listen(8080, (err, address) => {
     if (err) throw err;
     console.log("receiver listening on ", address);
-});
-
-(async () => {
-    const {
-        cookie,
-        licenseUrl,
-    } = require("../test.json");
-    const service = new AmazonLicenseService(cookie, licenseUrl);
-
-    const info = await serve(
-        service,
-        3000,
-    );
-    console.log("drm on", info);
-})().catch(e => {
-    console.warn(e);
 });

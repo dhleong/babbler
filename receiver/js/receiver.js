@@ -1,20 +1,75 @@
-/* global cast btoa fetch */
+/* global cast atob btoa fetch */
 
 const context = cast.framework.CastReceiverContext.getInstance();
 const playerManager = context.getPlayerManager();
+const NS = "urn:x-cast:com.github.dhleong.babbler";
 
 function ab2str(buf) {
     return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
+function str2ab(str) {
+    return Uint8Array.from(atob(str), c => c.charCodeAt(0));
+}
+
+class IpcLicenser {
+
+    constructor() {
+        this._nextRequestId = 1;
+        this._pendingRequests = {};
+    }
+
+    request(
+        licenseDataBase64,
+        licenseUrl,
+    ) {
+        const requestId = this._nextRequestId++;
+        context.sendCustomMessage(
+            NS,
+            undefined, // senderId ?
+            {
+                type: "LICENSE",
+                url: licenseUrl,
+                base64: licenseDataBase64,
+                requestId,
+            },
+        );
+
+        return new Promise(resolve => {
+            this._pendingRequests[requestId] = data => {
+                if (data.type !== "LICENSE_RESPONSE") {
+                    throw new Error(`Illegal state; got ${data.type}`);
+                }
+
+                const buffer = str2ab(data.response);
+                resolve(buffer);
+            };
+        });
+    }
+
+    _onMessage(m) {
+        if (!m.data) return;
+
+        const handler = this._pendingRequests[m.data.requestId];
+        if (!handler) return;
+
+        delete this._pendingRequests[m.data.requestId];
+        handler(m.data);
+    }
+
+    _register() {
+        context.addCustomMessageListener(NS, m => this._onMessage(m));
+    }
+}
+
+const ipcLicenser = new IpcLicenser();
+ipcLicenser._register();
+
 // intercept the LOAD request to be able to read in a contentId and get data
 playerManager.setMessageInterceptor(
     cast.framework.messages.MessageType.LOAD, async loadRequestData => {
-        console.log("LOAD", loadRequestData);
-
         if (loadRequestData.media && loadRequestData.media.contentId) {
             loadRequestData.media.contentId = loadRequestData.media.contentId.replace(/^http[s]?:/, "");
-            console.log("id <-", loadRequestData.media.contentId);
         }
 
         return loadRequestData;
@@ -29,32 +84,10 @@ playerManager.addEventListener(
 
 playerManager.addEventListener(
     cast.framework.events.EventType.MEDIA_STATUS, (event) => {
-        console.log("MEDIA_STATUS event: " + event.type);
-        console.log(event);
+        console.log("MEDIA_STATUS", event);
     });
 
 const playbackConfig = new cast.framework.PlaybackConfig();
-
-async function performIpcLicenseRequest(
-    licenseDataBase64,
-    licenseUrl,
-) {
-    // if it was JSON, then we should forward the request through
-    // the RPC mechanism
-    const url = "http://127.0.0.1:3000/drm";
-    const response = await fetch(url, {
-        headers: {
-            "Content-Type": "application/json",
-        },
-        method: "POST",
-        body: JSON.stringify({
-            base64: licenseDataBase64,
-            url: licenseUrl,
-        }),
-    });
-
-    return response.arrayBuffer();
-}
 
 playbackConfig.licenseHandler = async data => {
     const asString = ab2str(data);
@@ -67,7 +100,9 @@ playbackConfig.licenseHandler = async data => {
         return data;
     }
 
-    const buffer = await performIpcLicenseRequest(
+    // if it was JSON, then we should forward the request through
+    // the IPC mechanism
+    const buffer = await ipcLicenser.request(
         obj.data,
         obj.url,
     );
