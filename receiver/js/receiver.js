@@ -3,6 +3,7 @@
 const context = cast.framework.CastReceiverContext.getInstance();
 const playerManager = context.getPlayerManager();
 const NS = "urn:x-cast:com.github.dhleong.babbler";
+const DEBUG = false;
 
 function ab2str(buf) {
     return String.fromCharCode.apply(null, new Uint8Array(buf));
@@ -50,10 +51,10 @@ class IpcLicenser {
     _onMessage(m) {
         if (!m.data) return;
 
-        const handler = this._pendingRequests[m.data.requestId];
+        const handler = this._pendingRequests[m.data.responseTo];
         if (!handler) return;
 
-        delete this._pendingRequests[m.data.requestId];
+        delete this._pendingRequests[m.data.responseTo];
         handler(m.data);
     }
 
@@ -137,17 +138,7 @@ playerManager.setMediaPlaybackInfoHandler((loadRequest, playbackConfig) => {
         }
     }
 
-    // hacks for local testing:
     playbackConfig.shakaConfig = {
-        drm: {advanced: {
-            "com.widevine.alpha": {
-                // audioRobustness: "SW_SECURE_CRYPTO",
-                // videoRobustness: "SW_SECURE_CRYPTO",
-                audioRobustness: "",
-                videoRobustness: "",
-            },
-        }},
-
         // hacks to force widevine loading:
         manifest: {
             dash: {
@@ -156,10 +147,24 @@ playerManager.setMediaPlaybackInfoHandler((loadRequest, playbackConfig) => {
         },
     };
 
+    // hacks for local testing:
+    if (DEBUG) {
+        playbackConfig.shakaConfig.drm = {
+            advanced: {
+                "com.widevine.alpha": {
+                    audioRobustness: "",
+                    videoRobustness: "",
+                },
+            },
+        };
+    }
+
     return playbackConfig;
 });
 
-context.setLoggerLevel(cast.framework.LoggerLevel.VERBOSE);
+if (DEBUG) {
+    context.setLoggerLevel(cast.framework.LoggerLevel.VERBOSE);
+}
 
 context.start({
     // queue: myCastQueue,

@@ -29,8 +29,8 @@ export class Engine {
 
             client.send({
                 data: {
-                    requestId,
                     response: response.toString("base64"),
+                    responseTo: requestId,
                     type: "LICENSE_RESPONSE",
                 },
                 namespace: NS,
