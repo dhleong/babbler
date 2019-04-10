@@ -6,7 +6,7 @@
   "scripts": {
     "build": "parcel build index.html --out-dir receiver",
     "check": "npm run lint && npm run build",
-    "dev": "parcel -p 8080 watch index.html",
+    "dev": "cd local-testing/ && npm run dev",
     "lint": "tslint -p .",
     "prepare": "npm run build",
     "prepublishOnly": "npm run check",

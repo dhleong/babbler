@@ -1,8 +1,7 @@
 // tslint:disable no-console
 import path from "path";
 
-import fastify from "fastify";
-import fastifyStatic from "fastify-static";
+import Bundler from "parcel-bundler";
 import WebSocket, { Server as WSServer } from "ws";
 
 import _debug from "debug";
@@ -36,6 +35,9 @@ class SocketClient implements IClient {
 }
 
 const wss = new WSServer({ port: 8008 });
+wss.on("listening", () => {
+    debug("websocket listening on", wss.address());
+});
 wss.on("connection", ws => {
     const {
         cookie,
@@ -73,11 +75,17 @@ wss.on("connection", ws => {
     });
 });
 
-const receiverServer = fastify();
-receiverServer.register(fastifyStatic, {
-    root: path.join(__dirname, "../../"),
+const bundler = new Bundler(
+    path.join(__dirname, "../../index.html"),
+    {
+        outDir: path.join(__dirname, "../../dist"),
+    },
+);
+
+process.on("SIGTERM", () => {
+    wss.close(() => {
+        process.exit(0);
+    });
 });
-receiverServer.listen(8080, (err, address) => {
-    if (err) throw err;
-    console.log("receiver listening on ", address);
-});
+
+bundler.serve(8080);
