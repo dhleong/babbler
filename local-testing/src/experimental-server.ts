@@ -75,7 +75,7 @@ wss.on("connection", ws => {
 
 const receiverServer = fastify();
 receiverServer.register(fastifyStatic, {
-    root: path.join(__dirname, "../receiver"),
+    root: path.join(__dirname, "../../"),
 });
 receiverServer.listen(8080, (err, address) => {
     if (err) throw err;
