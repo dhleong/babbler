@@ -1,0 +1,17 @@
+language: node_js
+node_js:
+    - "node"
+
+cache: npm
+
+script: npm run check
+
+deploy:
+    provider: pages
+    skip_cleanup: true
+    github_token: $GITHUB_DEPLOY # Set in travis-ci.org dashboard
+    local_dir: dist
+    on:
+        branch: master
+
+
