@@ -1,6 +1,8 @@
 import debug_ from "debug";
 const debug = debug_("babbler:playback");
 
+import { IPlayerManagerEx } from "chromecast-caf-receiver/cast.framework";
+
 export class PlaybackHandler {
     public static init(
         context: cast.framework.CastReceiverContext,
@@ -25,13 +27,28 @@ export class PlaybackHandler {
             );
         }
 
-        // TODO mediainterceptor
+        // gross, but necessary due to incomplete typings:
+        const pmEx = playerManager as unknown as IPlayerManagerEx;
+        pmEx.setMessageInterceptor(
+            cast.framework.messages.MessageType.LOAD,
+            handler.interceptLoadMessage.bind(handler),
+        );
 
         playerManager.setMediaPlaybackInfoHandler(
             handler.handleMediaPlaybackInfo.bind(handler),
         );
 
         return handler;
+    }
+
+    public async interceptLoadMessage(
+        loadRequestData: cast.framework.messages.LoadRequestData,
+    ) {
+        if (loadRequestData.media && loadRequestData.media.contentId) {
+            loadRequestData.media.contentId = loadRequestData.media.contentId.replace(/^http[s]?:/, "");
+        }
+
+        return loadRequestData;
     }
 
     public handleMediaPlaybackInfo(
