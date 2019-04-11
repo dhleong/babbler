@@ -1,23 +1,16 @@
 import _debug from "debug";
+import { isRpcResponse, ReqArgsFor, ResponseDataFor, RPC } from "./messages";
 const debug = _debug("babbler:rpc");
-
-import { RequestType } from "./messages";
 
 const NS = "urn:x-cast:com.github.dhleong.babbler";
 
 type RequestResolver<T> = (result: T) => void;
 
-export interface IRpcResponseData<T> {
-    response: T;
-    responseTo: number;
-}
-export interface IRpcResponse<T> extends cast.framework.events.Event {
-    data: IRpcResponseData<T>;
-}
-
-function isRpcResponse<T>(ev: cast.framework.events.Event): ev is IRpcResponse<T> {
-    const data = (ev as any).data;
-    return data && data.responseTo;
+class PendingRequest<T extends RPC<any, any>> {
+    constructor(
+        public rpc: T,
+        public resolve: RequestResolver<ResponseDataFor<T>>,
+    ) {}
 }
 
 export class RpcManager {
@@ -33,32 +26,40 @@ export class RpcManager {
     }
 
     private nextRequestId = 1;
-    private pendingRequests: {[key: number]: RequestResolver<any>} = {};
+    private pendingRequests: {[key: number]: PendingRequest<RPC<any, any>>} = {};
 
     private constructor(
         private context: cast.framework.CastReceiverContext,
     ) { }
 
-    public send(type: RequestType, args: any) {
+    public send<TRPC extends RPC<any, any>>(
+        rpc: TRPC,
+        data: ReqArgsFor<TRPC>,
+    ): Promise<ResponseDataFor<TRPC>> {
         const requestId = this.nextRequestId++;
         this.context.sendCustomMessage(
             NS,
             "*", // senderId ?
             Object.assign({
                 requestId,
-                type,
-            }, args),
+                type: rpc.requestType,
+            }, data),
         );
 
         return new Promise((resolve, reject) => {
             const timeoutHandle = setTimeout(() => {
-                reject(new Error("Timeout waiting for response"));
-            }, 15000);
+                reject(new Error(
+                    `Timeout waiting for response to ${rpc.requestType}`,
+                ));
+            }, rpc.timeoutMillis);
 
-            this.pendingRequests[requestId] = data => {
-                clearTimeout(timeoutHandle);
-                resolve(data);
-            };
+            this.pendingRequests[requestId] = new PendingRequest(
+                rpc,
+                response => {
+                    clearTimeout(timeoutHandle);
+                    resolve(data);
+                },
+            );
         });
     }
 
@@ -66,11 +67,19 @@ export class RpcManager {
         if (!isRpcResponse(msg)) return;
 
         debug("received", msg);
-        const handler = this.pendingRequests[msg.data.responseTo];
-        if (!handler) return;
+        const req = this.pendingRequests[msg.data.responseTo];
+        if (!req) return;
+
+        if (msg.type !== req.rpc.responseType) {
+            throw new Error(
+                `Expected ${req.rpc.responseType}` +
+                `in response to ${req.rpc.requestType}` +
+                `but got ${msg.type}`,
+            );
+        }
 
         delete this.pendingRequests[msg.data.responseTo];
-        handler(msg.data);
+        req.resolve(msg.data.response);
     }
 
 }
