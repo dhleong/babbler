@@ -70,6 +70,7 @@ export class PlaybackHandler {
     public start() {
         this.context.start({
             playbackConfig: this.playbackConfig,
+            supportedCommands: cast.framework.messages.Command.ALL_BASIC_MEDIA,
         });
     }
 }
