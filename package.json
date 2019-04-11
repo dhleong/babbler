@@ -7,7 +7,7 @@
     "last 3 Chrome major versions"
   ],
   "scripts": {
-    "build": "parcel build index.html --out-dir dist/receiver",
+    "build": "parcel build index.html --out-dir dist/receiver --public-url /babbler/receiver/",
     "check": "npm run lint && npm run build",
     "dev": "DEBUG=babbler:* ts-node-dev --respawn -P tsconfig.json local-testing/src/experimental-server.ts",
     "lint": "tslint -p .",
