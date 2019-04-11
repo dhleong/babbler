@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "",
   "private": true,
+  "browserslist": [
+    "last 3 Chrome major versions"
+  ],
   "scripts": {
     "build": "parcel build index.html --out-dir receiver",
     "check": "npm run lint && npm run build",
