@@ -57,7 +57,7 @@ export class RpcManager {
                 rpc,
                 response => {
                     clearTimeout(timeoutHandle);
-                    resolve(data);
+                    resolve(response);
                 },
             );
         });
@@ -70,11 +70,11 @@ export class RpcManager {
         const req = this.pendingRequests[msg.data.responseTo];
         if (!req) return;
 
-        if (msg.type !== req.rpc.responseType) {
+        if (msg.data.type !== req.rpc.responseType) {
             throw new Error(
-                `Expected ${req.rpc.responseType}` +
-                `in response to ${req.rpc.requestType}` +
-                `but got ${msg.type}`,
+                `Expected '${req.rpc.responseType}' ` +
+                `in response to '${req.rpc.requestType}'` +
+                `but got '${msg.type}'`,
             );
         }
 

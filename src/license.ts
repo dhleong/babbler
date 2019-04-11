@@ -1,6 +1,9 @@
+import _debug from "debug";
+const debug = _debug("babbler:license");
+
 import { LICENSE } from "./messages";
 import { RpcManager } from "./rpc";
-import { ab2str } from "./util";
+import { ab2str, str2ab } from "./util";
 
 export class LicenseHandler {
     public static init(
@@ -16,6 +19,8 @@ export class LicenseHandler {
 
         // NOTE: the typings don't allow for a promise, but the API does
         playbackConfig.licenseHandler = handler.handleLicenseData.bind(handler) as any;
+
+        debug("initialized LicenseHandler");
 
         return handler;
     }
@@ -41,7 +46,9 @@ export class LicenseHandler {
         });
     }
 
-    public async handleLicenseData(data: ArrayBuffer) {
+    public async handleLicenseData(
+        data: Uint8Array,
+    ): Promise<{buffer: ArrayBuffer}> {
         const asString = ab2str(data);
 
         let obj;
@@ -52,11 +59,11 @@ export class LicenseHandler {
             return data;
         }
 
-        const buffer = await this.rpc.send(LICENSE, {
+        const base64 = await this.rpc.send(LICENSE, {
             base64: obj.data,
             url: obj.url,
         });
 
-        return { buffer };
+        return str2ab(base64);
     }
 }

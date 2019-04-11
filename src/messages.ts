@@ -1,6 +1,7 @@
 export interface IRpcResponseData<TData> {
     response: TData;
     responseTo: number;
+    type: string;
 }
 
 export interface IRpcResponse<T> extends cast.framework.events.Event {
@@ -33,7 +34,10 @@ export interface ILicenseRequest {
     base64: string;
 }
 
-export const LICENSE = new RPC<ILicenseRequest, Buffer>(
+/**
+ * @return license data in base64 encoding
+ */
+export const LICENSE = new RPC<ILicenseRequest, string>(
     "LICENSE",
     "LICENSE_RESPONSE",
 );
