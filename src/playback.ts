@@ -1,76 +1,78 @@
-import { LICENSE } from "./messages";
-import { RpcManager } from "./rpc";
-import { ab2str } from "./util";
+import debug_ from "debug";
+const debug = debug_("babbler:playback");
 
 export class PlaybackHandler {
     public static init(
-        rpc: RpcManager,
-        context: cast.framework.CastReceiverContext =
-            cast.framework.CastReceiverContext.getInstance(),
-        playbackConfig: cast.framework.PlaybackConfig =
-            new cast.framework.PlaybackConfig(),
+        context: cast.framework.CastReceiverContext,
     ) {
-        const handler = new PlaybackHandler(
-            rpc,
-            context,
-            playbackConfig,
+        const handler = new PlaybackHandler();
+
+        const playerManager = context.getPlayerManager();
+
+        if (process.env.NODE_ENV !== "production") {
+            playerManager.addEventListener(
+                cast.framework.events.category.CORE,
+                event => {
+                    debug("EVENT", event);
+                },
+            );
+
+            playerManager.addEventListener(
+                cast.framework.events.EventType.MEDIA_STATUS,
+                event => {
+                    debug("MEDIA_STATUS", event);
+                },
+            );
+        }
+
+        // TODO mediainterceptor
+
+        playerManager.setMediaPlaybackInfoHandler(
+            handler.handleMediaPlaybackInfo.bind(handler),
         );
 
-        playbackConfig.licenseRequestHandler = handler.handleLicenseRequest.bind(handler);
-
-        // NOTE: the typings don't allow for a promise, but the API does
-        playbackConfig.licenseHandler = handler.handleLicenseData.bind(handler) as any;
-
-        handler.start();
         return handler;
     }
 
-    constructor(
-        private rpc: RpcManager,
-        private context: cast.framework.CastReceiverContext,
-        private playbackConfig: cast.framework.PlaybackConfig,
-    ) {}
-
-    public handleLicenseRequest(
-        requestInfo: cast.framework.NetworkRequestInfo,
+    public handleMediaPlaybackInfo(
+        loadRequest: cast.framework.messages.LoadRequestData,
+        playbackConfig: cast.framework.PlaybackConfig,
     ) {
-        const originalUrl = requestInfo.url;
-        if (!/^ipc:\/\//.test(originalUrl)) {
-            // just allow the default behavior
-            return null;
+        if (loadRequest.customData && loadRequest.customData.license) {
+            const { license } = loadRequest.customData;
+            if (license.url) {
+                playbackConfig.licenseUrl = license.url;
+            }
+
+            if (license.ipc) {
+                const licenseUrl = playbackConfig.licenseUrl || "";
+                const uri = "ipc://" + encodeURIComponent(licenseUrl);
+                playbackConfig.licenseUrl = uri;
+            }
         }
 
-        // route through IPC
-        const dataBase64 = btoa(ab2str(requestInfo.content));
-        requestInfo.url = "data://application/json," + JSON.stringify({
-            data: dataBase64,
-            url: originalUrl.substring("ipc://".length),
-        });
-    }
+        (playbackConfig as any).shakaConfig = {
+            // hacks to force widevine loading:
+            manifest: {
+                dash: {
+                    ignoreDrmInfo: true,
+                },
+            },
+        };
 
-    public async handleLicenseData(data: ArrayBuffer) {
-        const asString = ab2str(data);
-
-        let obj;
-        try {
-            obj = JSON.parse(asString);
-        } catch (e) {
-            // not JSON? return original response data unmolested
-            return data;
+        // hacks for local testing:
+        if (process.env.NODE_ENV !== "production") {
+            (playbackConfig as any).shakaConfig.drm = {
+                advanced: {
+                    "com.widevine.alpha": {
+                        audioRobustness: "",
+                        videoRobustness: "",
+                    },
+                },
+            };
         }
 
-        const buffer = await this.rpc.send(LICENSE, {
-            base64: obj.data,
-            url: obj.url,
-        });
-
-        return { buffer };
+        return playbackConfig;
     }
 
-    public start() {
-        this.context.start({
-            playbackConfig: this.playbackConfig,
-            supportedCommands: cast.framework.messages.Command.ALL_BASIC_MEDIA,
-        });
-    }
 }
