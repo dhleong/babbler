@@ -38,6 +38,7 @@
     "cssnano": "^4.1.10",
     "mocha": "^6.0.2",
     "parcel-bundler": "^1.12.3",
+    "tslint": "^5.15.0",
     "typescript": "^3.3.4000"
   }
 }
