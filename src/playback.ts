@@ -18,6 +18,15 @@ enum HangFixState {
     FIX_ERRORED_RESOLVING,
 }
 
+/**
+ * Remove eg `http:` from an URL so it will load with the correct
+ * protocol depending on whether this page is served over HTTPS
+ * or HTTP
+ */
+function stripUrlProtocol(url: string) {
+    return url.replace(/^http[s]?:/, "");
+}
+
 export class PlaybackHandler {
     public static init(
         context: cast.framework.CastReceiverContext,
@@ -82,7 +91,15 @@ export class PlaybackHandler {
         this.hangFixState = HangFixState.NO_HANG;
 
         if (loadRequestData.media && loadRequestData.media.contentId) {
-            loadRequestData.media.contentId = loadRequestData.media.contentId.replace(/^http[s]?:/, "");
+            loadRequestData.media.contentId = stripUrlProtocol(loadRequestData.media.contentId);
+
+            const meta = loadRequestData.media.metadata;
+            if (meta && (meta as any).images) {
+                const mediaMetdata = meta as cast.framework.messages.GenericMediaMetadata;
+                for (const image of mediaMetdata.images) {
+                    image.url = stripUrlProtocol(image.url);
+                }
+            }
         }
 
         return loadRequestData;
