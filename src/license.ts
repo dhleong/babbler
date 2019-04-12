@@ -5,7 +5,7 @@ import { LICENSE } from "./messages";
 import { RpcManager } from "./rpc";
 import { ab2str, str2ab } from "./util";
 
-export class LicenseHandler {
+export class LicenseHandler extends EventTarget {
     public static init(
         rpc: RpcManager,
         playbackConfig: cast.framework.PlaybackConfig,
@@ -27,7 +27,9 @@ export class LicenseHandler {
 
     constructor(
         private rpc: RpcManager,
-    ) {}
+    ) {
+        super();
+    }
 
     public handleLicenseRequest(
         requestInfo: cast.framework.NetworkRequestInfo,
@@ -63,6 +65,8 @@ export class LicenseHandler {
             base64: obj.data,
             url: obj.url,
         });
+
+        this.dispatchEvent(new Event("LICENSE_RESPONSE"));
 
         return str2ab(base64);
     }
