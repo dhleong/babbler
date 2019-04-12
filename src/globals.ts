@@ -18,6 +18,7 @@ enum Commands {
 }
 
 enum EventTypes {
+    ERROR = "ERROR",
     MEDIA_STATUS = "MEDIA_STATUS",
 }
 
