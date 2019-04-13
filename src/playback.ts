@@ -40,19 +40,17 @@ export class PlaybackHandler {
             playerManager,
         );
 
-        if (process.env.NODE_ENV !== "production") {
-            playerManager.addEventListener(
-                cast.framework.events.category.CORE,
-                event => {
-                    debug("EVENT", event);
+        playerManager.addEventListener(
+            cast.framework.events.category.CORE,
+            event => {
+                debug("EVENT", event);
 
-                    if (event.type === "REQUEST_LOAD") {
-                        const ev = event as cast.framework.events.RequestEvent;
-                        rpc.setActiveSender(ev.senderId);
-                    }
-                },
-            );
-        }
+                if (event.type === "REQUEST_LOAD") {
+                    const ev = event as cast.framework.events.RequestEvent;
+                    rpc.setActiveSender(ev.senderId);
+                }
+            },
+        );
 
         // we may be interested in error events:
         playerManager.addEventListener(
