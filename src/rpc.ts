@@ -28,6 +28,8 @@ export class RpcManager {
     private nextRequestId = 1;
     private pendingRequests: {[key: number]: PendingRequest<RPC<any, any>>} = {};
 
+    private activeSenderId: string | undefined;
+
     private constructor(
         private context: cast.framework.CastReceiverContext,
     ) { }
@@ -39,7 +41,11 @@ export class RpcManager {
         const requestId = this.nextRequestId++;
         this.context.sendCustomMessage(
             NS,
-            "*", // senderId ?
+
+            // NOTE: the typings don't allow undefined here, but
+            // it *is* acceptable for broadcast
+            this.activeSenderId as string,
+
             Object.assign({
                 requestId,
                 type: rpc.requestType,
@@ -48,9 +54,9 @@ export class RpcManager {
 
         return new Promise((resolve, reject) => {
             const timeoutHandle = setTimeout(() => {
-                reject(new Error(
-                    `Timeout waiting for response to ${rpc.requestType}`,
-                ));
+                const message = `TIMEOUT waiting for response to ${rpc.requestType} #${requestId}`;
+                debug(message);
+                reject(new Error(message));
             }, rpc.timeoutMillis);
 
             this.pendingRequests[requestId] = new PendingRequest(
@@ -61,6 +67,14 @@ export class RpcManager {
                 },
             );
         });
+    }
+
+    /**
+     * Set the ID of the sender to whom we will send
+     * messages
+     */
+    public setActiveSender(senderId: string | undefined) {
+        this.activeSenderId = senderId;
     }
 
     private onMessage(msg: cast.framework.events.Event) {

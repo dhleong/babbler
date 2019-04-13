@@ -14,8 +14,8 @@ const rpc = RpcManager.create();
 const context = cast.framework.CastReceiverContext.getInstance();
 const playbackConfig = new cast.framework.PlaybackConfig();
 
-const licenses = LicenseHandler.init(rpc, playbackConfig, context);
-PlaybackHandler.init(context, licenses);
+const licenses = LicenseHandler.init(context, playbackConfig, rpc);
+PlaybackHandler.init(context, rpc, licenses);
 
 context.start({
     playbackConfig,

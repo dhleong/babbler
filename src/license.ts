@@ -7,9 +7,9 @@ import { ab2str, str2ab } from "./util";
 
 export class LicenseHandler extends EventTarget {
     public static init(
-        rpc: RpcManager,
-        playbackConfig: cast.framework.PlaybackConfig,
         context: cast.framework.CastReceiverContext,
+        playbackConfig: cast.framework.PlaybackConfig,
+        rpc: RpcManager,
     ) {
         const handler = new LicenseHandler(
             rpc,
@@ -18,7 +18,13 @@ export class LicenseHandler extends EventTarget {
         playbackConfig.licenseRequestHandler = handler.handleLicenseRequest.bind(handler);
 
         // NOTE: the typings don't allow for a promise, but the API does
-        playbackConfig.licenseHandler = handler.handleLicenseData.bind(handler) as any;
+        playbackConfig.licenseHandler = data => {
+            try {
+                return handler.handleLicenseData(data) as any;
+            } catch (e) {
+                debug("error handling licenseRequest", e);
+            }
+        };
 
         debug("initialized LicenseHandler");
 
@@ -61,12 +67,15 @@ export class LicenseHandler extends EventTarget {
             return data;
         }
 
+        debug(">> license request");
+
         const base64 = await this.rpc.send(LICENSE, {
             base64: obj.data,
             url: obj.url,
         });
 
         this.dispatchEvent(new Event("LICENSE_RESPONSE"));
+        debug("<< got license response");
 
         return str2ab(base64);
     }

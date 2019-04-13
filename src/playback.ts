@@ -3,6 +3,7 @@ const debug = debug_("babbler:playback");
 
 import { IPlayerManagerEx } from "chromecast-caf-receiver/cast.framework";
 import { LicenseHandler } from "./license";
+import { RpcManager } from "./rpc";
 
 // TODO do some debouncing instead of just guessing like this...?
 const EXPECTED_LICENSE_REQUESTS = 4;
@@ -30,6 +31,7 @@ function stripUrlProtocol(url: string) {
 export class PlaybackHandler {
     public static init(
         context: cast.framework.CastReceiverContext,
+        rpc: RpcManager,
         licenses: LicenseHandler,
     ) {
         const playerManager = context.getPlayerManager();
@@ -41,7 +43,14 @@ export class PlaybackHandler {
         if (process.env.NODE_ENV !== "production") {
             playerManager.addEventListener(
                 cast.framework.events.category.CORE,
-                event => { debug("EVENT", event); },
+                event => {
+                    debug("EVENT", event);
+
+                    if (event.type === "REQUEST_LOAD") {
+                        const ev = event as cast.framework.events.RequestEvent;
+                        rpc.setActiveSender(ev.senderId);
+                    }
+                },
             );
         }
 
@@ -84,7 +93,7 @@ export class PlaybackHandler {
     public async interceptLoadMessage(
         loadRequestData: cast.framework.messages.LoadRequestData,
     ) {
-        debug("new LOAD request received");
+        debug("new LOAD request received", loadRequestData);
 
         // reset state for new media
         this.licenseResponsesReceived = 0;
