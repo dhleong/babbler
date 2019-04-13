@@ -1,3 +1,27 @@
+/*
+ * Misc types
+ */
+
+// tslint:disable no-bitwise
+export enum SenderCapabilities {
+    None = 0,
+
+    QueueNext = 1 << 1,
+    QueuePrev = 1 << 2,
+}
+
+export function hasCapability(
+    haystack: SenderCapabilities,
+    needle: SenderCapabilities,
+) {
+    return (haystack & needle) === needle;
+}
+// tslint:enable no-bitwise
+
+/*
+ * RPC core types
+ */
+
 export interface IRpcResponseData<TData> {
     response: TData;
     responseTo: number;
@@ -55,6 +79,6 @@ export interface IQueueRequest {
 }
 
 export interface IQueueResponse {
-    // TODO
     contentId: string;
+    metadata: cast.framework.messages.MediaMetadata;
 }

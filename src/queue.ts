@@ -1,7 +1,7 @@
 import debug_ from "debug";
 const debug = debug_("babbler:queue");
 
-import { IQueueResponse, QUEUE } from "./messages";
+import { hasCapability, IQueueResponse, QUEUE, SenderCapabilities } from "./messages";
 import { RpcManager } from "./rpc";
 
 type QueueItem = cast.framework.messages.QueueItem;
@@ -17,6 +17,8 @@ export class BabblerQueue extends cast.framework.QueueBase {
         );
     }
 
+    private capabilities: SenderCapabilities = SenderCapabilities.None;
+
     constructor(
         private mgr: cast.framework.QueueManager,
         private rpc: RpcManager,
@@ -25,14 +27,26 @@ export class BabblerQueue extends cast.framework.QueueBase {
     }
 
     public async nextItems(itemId?: number): Promise<QueueItem[]> {
-        return this.fetchRelativeTo("after", itemId);
+        return this.fetchRelativeTo("after", SenderCapabilities.QueueNext, itemId);
+    }
+
+    public setSenderCapabilities(
+        capabilities: SenderCapabilities,
+    ) {
+        this.capabilities = capabilities;
     }
 
     private async fetchRelativeTo(
         mode: "before" | "after",
+        capability: SenderCapabilities,
         itemId?: number,
     ) {
         if (!itemId) return [];
+
+        if (!hasCapability(this.capabilities, capability)) {
+            debug("current sender isn't capable of fetching", mode);
+            return [];
+        }
 
         const items = this.mgr.getItems();
         const fetchAfter = items.find(item => item.itemId === itemId);

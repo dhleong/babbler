@@ -40,6 +40,7 @@ export class PlaybackHandler {
 
         const handler = new PlaybackHandler(
             playerManager,
+            queue,
         );
 
         playerManager.addEventListener(
@@ -88,6 +89,7 @@ export class PlaybackHandler {
 
     constructor(
         private playerManager: cast.framework.PlayerManager,
+        private queue: BabblerQueue,
     ) {}
 
     public async interceptLoadMessage(
@@ -109,6 +111,15 @@ export class PlaybackHandler {
                     image.url = stripUrlProtocol(image.url);
                 }
             }
+        }
+
+        if (
+            loadRequestData.customData
+            && loadRequestData.customData.capabilities
+        ) {
+            this.queue.setSenderCapabilities(
+                loadRequestData.customData.capabilities,
+            );
         }
 
         return loadRequestData;
