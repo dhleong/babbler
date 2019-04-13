@@ -16,9 +16,9 @@ const context = cast.framework.CastReceiverContext.getInstance();
 const playbackConfig = new cast.framework.PlaybackConfig();
 
 const licenses = LicenseHandler.init(context, playbackConfig, rpc);
-PlaybackHandler.init(context, rpc, licenses);
-
 const queue = BabblerQueue.create(context, rpc);
+
+PlaybackHandler.init(context, rpc, licenses, queue);
 
 // tslint:disable no-bitwise
 context.start({

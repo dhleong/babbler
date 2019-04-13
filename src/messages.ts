@@ -49,12 +49,12 @@ export interface ILicenseRequest {
 
 export const QUEUE = new RPC<IQueueRequest, IQueueResponse[]>("QUEUE");
 
-interface IQueueRequest {
+export interface IQueueRequest {
     mode: "before" | "after";
     contentId: string;
 }
 
-interface IQueueResponse {
+export interface IQueueResponse {
     // TODO
     contentId: string;
 }

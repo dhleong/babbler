@@ -1,7 +1,7 @@
 import debug_ from "debug";
 const debug = debug_("babbler:queue");
 
-import { QUEUE } from "./messages";
+import { IQueueResponse, QUEUE } from "./messages";
 import { RpcManager } from "./rpc";
 
 type QueueItem = cast.framework.messages.QueueItem;
@@ -25,6 +25,13 @@ export class BabblerQueue extends cast.framework.QueueBase {
     }
 
     public async nextItems(itemId?: number): Promise<QueueItem[]> {
+        return this.fetchRelativeTo("after", itemId);
+    }
+
+    private async fetchRelativeTo(
+        mode: "before" | "after",
+        itemId?: number,
+    ) {
         if (!itemId) return [];
 
         const items = this.mgr.getItems();
@@ -41,12 +48,21 @@ export class BabblerQueue extends cast.framework.QueueBase {
         debug("fetch items after", fetchAfter.media.contentId);
         const result = await this.rpc.send(QUEUE, {
             contentId: fetchAfter.media.contentId,
-            mode: "after",
+            mode,
         });
 
         debug("got", result);
-
-        // TODO
-        return [];
+        return result.map(toQueueItem);
     }
+}
+
+function toQueueItem(item: IQueueResponse): QueueItem {
+    const result = new cast.framework.messages.QueueItem();
+    result.media = {
+        contentId: item.contentId,
+        contentType: "video/mp4", // TODO ?
+        contentUrl: item.contentId,
+        streamType: "BUFFERED",
+    };
+    return result;
 }

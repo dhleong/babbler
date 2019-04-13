@@ -3,6 +3,7 @@ const debug = debug_("babbler:playback");
 
 import { IPlayerManagerEx } from "chromecast-caf-receiver/cast.framework";
 import { LicenseHandler } from "./license";
+import { BabblerQueue } from "./queue";
 import { RpcManager } from "./rpc";
 
 // TODO do some debouncing instead of just guessing like this...?
@@ -33,6 +34,7 @@ export class PlaybackHandler {
         context: cast.framework.CastReceiverContext,
         rpc: RpcManager,
         licenses: LicenseHandler,
+        queue: BabblerQueue,
     ) {
         const playerManager = context.getPlayerManager();
 
