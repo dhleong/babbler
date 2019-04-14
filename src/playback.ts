@@ -3,6 +3,7 @@ const debug = debug_("babbler:playback");
 
 import { IPlayerManagerEx } from "chromecast-caf-receiver/cast.framework";
 import { LicenseHandler } from "./license";
+import { hasCapability, INFO, SenderCapabilities } from "./messages";
 import { BabblerQueue } from "./queue";
 import { RpcManager } from "./rpc";
 
@@ -40,6 +41,7 @@ export class PlaybackHandler {
 
         const handler = new PlaybackHandler(
             playerManager,
+            rpc,
             queue,
         );
 
@@ -50,7 +52,9 @@ export class PlaybackHandler {
 
                 if (event.type === "REQUEST_LOAD") {
                     const ev = event as cast.framework.events.RequestEvent;
-                    rpc.setActiveSender(ev.senderId);
+                    if (ev.senderId !== "") {
+                        rpc.setActiveSender(ev.senderId);
+                    }
                 }
             },
         );
@@ -89,6 +93,7 @@ export class PlaybackHandler {
 
     constructor(
         private playerManager: cast.framework.PlayerManager,
+        private rpc: RpcManager,
         private queue: BabblerQueue,
     ) {}
 
@@ -101,8 +106,45 @@ export class PlaybackHandler {
         this.licenseResponsesReceived = 0;
         this.hangFixState = HangFixState.NO_HANG;
 
-        if (loadRequestData.media && loadRequestData.media.contentId) {
-            loadRequestData.media.contentId = stripUrlProtocol(loadRequestData.media.contentId);
+        if (
+            loadRequestData.customData
+            && loadRequestData.customData.capabilities
+        ) {
+            const { capabilities } = loadRequestData.customData;
+            this.queue.setSenderCapabilities(
+                capabilities,
+            );
+
+            if (hasCapability(capabilities, SenderCapabilities.DeferredInfo)) {
+                const media = await this.rpc.send(INFO, {
+                    contentId: loadRequestData.media.contentId,
+                });
+
+                // move customData out of the media object onto the
+                // loadRequest so we're not broadcasting it
+                if (media.customData) {
+                    loadRequestData.customData = Object.assign(
+                        loadRequestData.customData,
+                        media.customData,
+                    );
+                    delete media.customData;
+                }
+
+                loadRequestData.media = Object.assign(
+                    loadRequestData.media,
+                    media,
+                );
+            }
+        }
+
+        if (loadRequestData.media) {
+            if (loadRequestData.media.contentId) {
+                loadRequestData.media.contentId = stripUrlProtocol(loadRequestData.media.contentId);
+            }
+
+            if (loadRequestData.media.contentUrl) {
+                loadRequestData.media.contentUrl = stripUrlProtocol(loadRequestData.media.contentUrl);
+            }
 
             const meta = loadRequestData.media.metadata;
             if (meta && (meta as any).images) {
@@ -113,22 +155,15 @@ export class PlaybackHandler {
             }
         }
 
-        if (
-            loadRequestData.customData
-            && loadRequestData.customData.capabilities
-        ) {
-            this.queue.setSenderCapabilities(
-                loadRequestData.customData.capabilities,
-            );
-        }
-
         return loadRequestData;
     }
 
-    public handleMediaPlaybackInfo(
+    public async handleMediaPlaybackInfo(
         loadRequest: cast.framework.messages.LoadRequestData,
         playbackConfig: cast.framework.PlaybackConfig,
     ) {
+        debug("mediaPlaybackInfo", loadRequest);
+
         if (loadRequest.customData && loadRequest.customData.license) {
             const { license } = loadRequest.customData;
             if (license.url) {

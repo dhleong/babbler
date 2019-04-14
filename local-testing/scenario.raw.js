@@ -17,7 +17,8 @@ const timeline = [
                 type: "LOAD",
                 sessionId: "46fd154e-f03d-4d58-986d-4998c43639a7",
                 media: {
-                    contentId: "http://58s3.ll.dash.us.aiv-cdn.net/d/2$CYfJt0qhHtrqVw09GAAnFKsbObI~/8833/9ad1/5836/4aea-ac87-1f217843f566/046090b7-77a5-4951-9a55-7f0776568c25_corrected.mpd",
+                    // contentId: "http://58s3.ll.dash.us.aiv-cdn.net/d/2$CYfJt0qhHtrqVw09GAAnFKsbObI~/8833/9ad1/5836/4aea-ac87-1f217843f566/046090b7-77a5-4951-9a55-7f0776568c25_corrected.mpd",
+                    contentId: "http://d2lkq7nlcrdi7q.cloudfront.net/dm/2$CYfJt0qhHtrqVw09GAAnFKsbObI~/1924/968a/9d3c/446f-a7b7-677eb3d75569/f81cf5b3-02d7-4306-b819-ad1811a75038_corrected.mpd",
                     streamType: "BUFFERED",
                     contentType: "application/dash+xml",
                     metadata: {

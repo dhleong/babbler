@@ -59,13 +59,14 @@ export class BabblerQueue extends cast.framework.QueueBase {
             throw new Error("No media attached to queue item");
         }
 
-        debug("fetch items after", fetchAfter.media.contentId);
+        const { contentId } = fetchAfter.media;
+        debug(`fetch items ${mode}`, contentId);
         const result = await this.rpc.send(QUEUE, {
-            contentId: fetchAfter.media.contentId,
+            contentId,
             mode,
         });
 
-        debug("got", result);
+        debug(` queue(${mode} ${contentId}) <- `, result);
         return result.map(toQueueItem);
     }
 }
@@ -76,7 +77,10 @@ function toQueueItem(item: IQueueResponse): QueueItem {
         contentId: item.contentId,
         contentType: "video/mp4", // TODO ?
         contentUrl: item.contentId,
+        metadata: item.metadata,
         streamType: "BUFFERED",
     };
+    result.startTime = item.currentTime;
+    result.customData = item.customData;
     return result;
 }

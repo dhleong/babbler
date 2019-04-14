@@ -39,6 +39,7 @@ export class RpcManager {
         data: ReqArgsFor<TRPC>,
     ): Promise<ResponseDataFor<TRPC>> {
         const requestId = this.nextRequestId++;
+        debug(`send ${rpc.requestType} #${requestId} to ${this.activeSenderId}`);
         this.context.sendCustomMessage(
             NS,
 
@@ -74,6 +75,7 @@ export class RpcManager {
      * messages
      */
     public setActiveSender(senderId: string | undefined) {
+        debug("activeSenderId <-", senderId);
         this.activeSenderId = senderId;
     }
 

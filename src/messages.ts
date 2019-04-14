@@ -1,3 +1,5 @@
+import { MediaInformation } from "chromecast-caf-receiver/cast.framework.messages";
+
 /*
  * Misc types
  */
@@ -6,8 +8,10 @@
 export enum SenderCapabilities {
     None = 0,
 
-    QueueNext = 1 << 1,
-    QueuePrev = 1 << 2,
+    DeferredInfo = 1 << 1,
+
+    QueueNext = 1 << 2,
+    QueuePrev = 1 << 3,
 }
 
 export function hasCapability(
@@ -17,6 +21,14 @@ export function hasCapability(
     return (haystack & needle) === needle;
 }
 // tslint:enable no-bitwise
+
+export interface IBabblerCustomData {
+    capabilities?: SenderCapabilities;
+    license?: {
+        ipc?: boolean;
+        url?: string;
+    };
+}
 
 /*
  * RPC core types
@@ -53,6 +65,16 @@ export type ResponseDataFor<T extends RPC<any, any>> =
     T extends RPC<infer TReq, infer TResponseData> ? TResponseData :
     never;
 
+/**
+ * INFO request
+ */
+
+export const INFO = new RPC<IInfoRequest, MediaInformation>("INFO");
+
+export interface IInfoRequest {
+    contentId: string;
+}
+
 /*
  * LICENSE request
  */
@@ -80,5 +102,7 @@ export interface IQueueRequest {
 
 export interface IQueueResponse {
     contentId: string;
+    currentTime?: number;
+    customData?: IBabblerCustomData;
     metadata: cast.framework.messages.MediaMetadata;
 }
