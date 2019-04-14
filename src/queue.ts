@@ -30,6 +30,10 @@ export class BabblerQueue extends cast.framework.QueueBase {
         return this.fetchRelativeTo("after", SenderCapabilities.QueueNext, itemId);
     }
 
+    public async prevItems(itemId?: number): Promise<QueueItem[]> {
+        return this.fetchRelativeTo("before", SenderCapabilities.QueuePrev, itemId);
+    }
+
     public setSenderCapabilities(
         capabilities: SenderCapabilities,
     ) {
@@ -41,7 +45,10 @@ export class BabblerQueue extends cast.framework.QueueBase {
         capability: SenderCapabilities,
         itemId?: number,
     ) {
-        if (!itemId) return [];
+        if (!itemId) {
+            debug(`no itemId passed to fetch(${mode})`);
+            return [];
+        }
 
         if (!hasCapability(this.capabilities, capability)) {
             debug("current sender isn't capable of fetching", mode);
