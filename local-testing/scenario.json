@@ -12,7 +12,7 @@
         "type": "LOAD",
         "sessionId": "46fd154e-f03d-4d58-986d-4998c43639a7",
         "media": {
-          "contentId": "http://s3.ll.dash.row.aiv-cdn.net/d/2$3bWlFDVIy40FBsNno33PMN4hD-E~/iad_2/fa05/8c49/5a8c/45c9-b4d2-f70ded413599/15ee518d-b23c-44cf-8673-f358e6de9348_corrected.mpd",
+          "contentId": "http://d2lkq7nlcrdi7q.cloudfront.net/dm/2$CYfJt0qhHtrqVw09GAAnFKsbObI~/1924/968a/9d3c/446f-a7b7-677eb3d75569/f81cf5b3-02d7-4306-b819-ad1811a75038_corrected.mpd",
           "streamType": "BUFFERED",
           "contentType": "application/dash+xml",
           "metadata": {
